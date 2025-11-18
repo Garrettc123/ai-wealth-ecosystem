@@ -1,9 +1,36 @@
-build/
-dist/
-*.log
+# Python
 __pycache__/
 *.py[cod]
-venv/
+*.so
+*.egg-info/
+dist/
+build/
+
+# Environment
 .env
-.env.local
-node_modules/
+venv/
+env/
+
+# Config
+config.json
+*.key
+*.pem
+
+# Data
+data/
+logs/
+*.log
+*.db
+*.sqlite
+
+# Reports
+wealth_report.json
+*.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store

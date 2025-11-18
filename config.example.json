@@ -1,0 +1,28 @@
+{
+  "strategies": {
+    "api_monetization": true,
+    "crypto_arbitrage": true,
+    "content_generation": true,
+    "bounty_hunting": true,
+    "affiliate_marketing": true
+  },
+  "targets": {
+    "daily": 100,
+    "monthly": 3000,
+    "yearly": 36000
+  },
+  "automation": {
+    "auto_reinvest": true,
+    "risk_management": true,
+    "diversification": true,
+    "max_risk_per_trade": 0.02
+  },
+  "api_keys": {
+    "exchange_key": "YOUR_KEY_HERE",
+    "exchange_secret": "YOUR_SECRET_HERE"
+  },
+  "notifications": {
+    "email": "your@email.com",
+    "telegram_enabled": false
+  }
+}
