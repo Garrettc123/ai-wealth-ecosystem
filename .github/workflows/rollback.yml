@@ -1,28 +1,171 @@
-name: One-Click Rollback
+name: Railway Rollback Automation
 
 on:
   workflow_dispatch:
     inputs:
-      sha:
-        description: 'Commit SHA to redeploy'
+      mode:
+        description: 'Rollback mode'
         required: true
+        type: choice
+        options:
+          - commit-sha
+          - deployment-id
+        default: commit-sha
+      sha:
+        description: 'Git commit SHA (for commit-sha mode)'
+        required: false
+      deployment_id:
+        description: 'Railway deployment ID (for deployment-id mode)'
+        required: false
+      skip_health_check:
+        description: 'Skip post-rollback health check'
+        required: false
+        type: boolean
+        default: false
 
 env:
   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
   RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+  RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
+  RAILWAY_APP_URL: ${{ secrets.RAILWAY_APP_URL }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+  NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+  NOTION_DEPLOY_PAGE_ID: ${{ secrets.NOTION_DEPLOY_PAGE_ID }}
 
 jobs:
   rollback:
-    name: Rollback to SHA
+    name: Execute Rollback
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.health.outcome }}
     steps:
-      - name: Trigger Railway redeploy at SHA
+      - name: Validate inputs & secrets
         run: |
-          echo "Rolling back to ${{ github.event.inputs.sha }}"
-          # Railway redeploy via CLI or API (adjust as needed for your setup)
-          curl -fsSL \
-            -X POST \
+          if [ "${{ github.event.inputs.mode }}" = "commit-sha" ] && [ -z "${{ github.event.inputs.sha }}" ]; then
+            echo "❌ commit-sha mode requires a SHA"
+            exit 1
+          fi
+          if [ "${{ github.event.inputs.mode }}" = "deployment-id" ] && [ -z "${{ github.event.inputs.deployment_id }}" ]; then
+            echo "❌ deployment-id mode requires a deployment_id"
+            exit 1
+          fi
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_SERVICE_ID" ] || [ -z "$RAILWAY_ENVIRONMENT_ID" ]; then
+            echo "❌ Missing required secrets: RAILWAY_TOKEN, RAILWAY_SERVICE_ID, RAILWAY_ENVIRONMENT_ID"
+            exit 1
+          fi
+          echo "✅ Inputs and secrets validated"
+
+      - name: Rollback via commit SHA
+        if: github.event.inputs.mode == 'commit-sha'
+        run: |
+          echo "🔄 Deploying commit ${{ github.event.inputs.sha }}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://backboard.railway.app/graphql/v2 \
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"serviceId\": \"$RAILWAY_SERVICE_ID\", \"commitSha\": \"${{ github.event.inputs.sha }}\"}" \
-            https://backboard.railway.app/graphql/v2 || echo "Manual Railway rollback may be required"
+            -d "{
+              \"query\": \"mutation($serviceId: String!, $environmentId: String!, $commitSha: String!) { serviceInstanceDeployV2(serviceId: $serviceId, environmentId: $environmentId, commitSha: $commitSha) }\",
+              \"variables\": {
+                \"serviceId\": \"$RAILWAY_SERVICE_ID\",
+                \"environmentId\": \"$RAILWAY_ENVIRONMENT_ID\",
+                \"commitSha\": \"${{ github.event.inputs.sha }}\"
+              }
+            }")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "$BODY"
+          if [ "$HTTP_CODE" != "200" ] || echo "$BODY" | grep -q '"errors"'; then
+            echo "❌ Rollback mutation failed"
+            exit 1
+          fi
+          echo "✅ Commit-based deploy triggered"
+
+      - name: Rollback via deployment ID
+        if: github.event.inputs.mode == 'deployment-id'
+        run: |
+          echo "🔄 Rolling back to deployment ${{ github.event.inputs.deployment_id }}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://backboard.railway.app/graphql/v2 \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"query\": \"mutation($id: String!) { deploymentRollback(id: $id) { id } }\",
+              \"variables\": {
+                \"id\": \"${{ github.event.inputs.deployment_id }}\"
+              }
+            }")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "$BODY"
+          if [ "$HTTP_CODE" != "200" ] || echo "$BODY" | grep -q '"errors"'; then
+            echo "❌ deploymentRollback failed"
+            exit 1
+          fi
+          echo "✅ Deployment rollback triggered"
+
+      - name: Wait for Railway to stabilize
+        run: sleep 45
+
+      - name: Health check
+        id: health
+        if: github.event.inputs.skip_health_check != 'true'
+        run: |
+          APP_URL="${RAILWAY_APP_URL:-https://your-service.railway.app}"
+          for i in 1 2 3 4 5 6; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/health" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i — HTTP $STATUS — retrying in 15s"
+            sleep 15
+          done
+          echo "❌ Health check failed after 6 attempts"
+          exit 1
+
+      - name: Log rollback to Supabase
+        if: always()
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "⚠️ Supabase secrets missing — skipping event log"
+            exit 0
+          fi
+          STATUS="${{ steps.health.outcome }}"
+          [ -z "$STATUS" ] && STATUS="skipped"
+          curl -s -X POST "$SUPABASE_URL/rest/v1/system_events" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"event_type\": \"rollback\",
+              \"payload\": {
+                \"mode\": \"${{ github.event.inputs.mode }}\",
+                \"sha\": \"${{ github.event.inputs.sha }}\",
+                \"deployment_id\": \"${{ github.event.inputs.deployment_id }}\",
+                \"status\": \"$STATUS\",
+                \"actor\": \"${{ github.actor }}\",
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }
+            }" || echo "⚠️ Supabase write failed"
+
+      - name: Update Notion
+        if: always()
+        run: |
+          if [ -z "$NOTION_TOKEN" ] || [ -z "$NOTION_DEPLOY_PAGE_ID" ]; then
+            echo "⚠️ Notion secrets missing — skipping"
+            exit 0
+          fi
+          STATUS_NAME="Rolled Back"
+          if [ "${{ steps.health.outcome }}" = "failure" ]; then
+            STATUS_NAME="Rollback Failed"
+          fi
+          curl -s -X PATCH "https://api.notion.com/v1/pages/$NOTION_DEPLOY_PAGE_ID" \
+            -H "Authorization: Bearer $NOTION_TOKEN" \
+            -H "Notion-Version: 2022-06-28" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"properties\": {
+                \"Last Deploy\": {\"date\": {\"start\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}},
+                \"Deploy SHA\": {\"rich_text\": [{\"text\": {\"content\": \"${{ github.event.inputs.sha || github.event.inputs.deployment_id }}\"}}]},
+                \"Status\": {\"select\": {\"name\": \"$STATUS_NAME\"}}
+              }
+            }" || echo "⚠️ Notion update failed"
