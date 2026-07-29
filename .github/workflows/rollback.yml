@@ -1,0 +1,28 @@
+name: One-Click Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit SHA to redeploy'
+        required: true
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+
+jobs:
+  rollback:
+    name: Rollback to SHA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Railway redeploy at SHA
+        run: |
+          echo "Rolling back to ${{ github.event.inputs.sha }}"
+          # Railway redeploy via CLI or API (adjust as needed for your setup)
+          curl -fsSL \
+            -X POST \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"serviceId\": \"$RAILWAY_SERVICE_ID\", \"commitSha\": \"${{ github.event.inputs.sha }}\"}" \
+            https://backboard.railway.app/graphql/v2 || echo "Manual Railway rollback may be required"
