@@ -7,10 +7,12 @@ on:
       - 'strategies/public_market_scan.py'
       - 'strategies/aegis_scanner.py'
       - 'strategies/aegis_verify.py'
+      - 'wealth_generator.py'
       - 'tests/test_crypto_arbitrage.py'
       - 'tests/test_public_market_scan.py'
       - 'tests/test_aegis_scanner.py'
       - 'tests/test_aegis_verify.py'
+      - 'tests/test_revenue_integrity.py'
       - '.github/workflows/crypto-guardrails.yml'
   pull_request:
     paths:
@@ -18,10 +20,12 @@ on:
       - 'strategies/public_market_scan.py'
       - 'strategies/aegis_scanner.py'
       - 'strategies/aegis_verify.py'
+      - 'wealth_generator.py'
       - 'tests/test_crypto_arbitrage.py'
       - 'tests/test_public_market_scan.py'
       - 'tests/test_aegis_scanner.py'
       - 'tests/test_aegis_verify.py'
+      - 'tests/test_revenue_integrity.py'
       - '.github/workflows/crypto-guardrails.yml'
   workflow_dispatch:
 
@@ -38,7 +42,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Compile strict crypto modules
-        run: python -m compileall -q strategies/crypto_arbitrage.py strategies/public_market_scan.py strategies/aegis_scanner.py strategies/aegis_verify.py tests/test_aegis_scanner.py tests/test_aegis_verify.py tests/test_crypto_arbitrage.py tests/test_public_market_scan.py
+        run: python -m compileall -q strategies/crypto_arbitrage.py strategies/public_market_scan.py strategies/aegis_scanner.py strategies/aegis_verify.py wealth_generator.py tests/test_revenue_integrity.py tests/test_aegis_scanner.py tests/test_aegis_verify.py tests/test_crypto_arbitrage.py tests/test_public_market_scan.py
       - name: Test strict crypto modules without network or secrets
         run: python -m unittest discover -s tests -p 'test_*.py' -v
 
