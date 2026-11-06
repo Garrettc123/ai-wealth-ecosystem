@@ -14,7 +14,6 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
-from pathlib import Path
 from typing import Any
 
 COINBASE = "https://api.coinbase.com/api/v3/brokerage/market/product_book?product_id=BTC-USD&limit=25"
