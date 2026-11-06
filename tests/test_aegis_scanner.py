@@ -1,13 +1,11 @@
-import copy
-import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from strategies.aegis_scanner import (
-    COINBASE, KRAKEN, ResearchError, EvidenceLedger, analyze, canonical,
-    compare, dec, get_public_json, levels, parse_book, sha256, sweep,
+    COINBASE, KRAKEN, ResearchError, EvidenceLedger, analyze,
+    dec, get_public_json, parse_book, sha256, sweep,
 )
 
 
