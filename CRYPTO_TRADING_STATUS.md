@@ -38,3 +38,8 @@ References:
 - https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/public/get-public-product-book
 - https://docs.kraken.com/api/docs/rest-api/get-order-book
 - https://money.x.com/en/i/faq
+
+
+## Advanced AEGIS research layer (2026-11-05)
+
+See `AEGIS_README.md`, `strategies/aegis_scanner.py`, `strategies/aegis_verify.py` and their dedicated tests. This adds multi-level depth, VWAP, fee and adverse-price stress, notional caps, explicit estimates-only reporting, local hash-chain evidence and external-tip verification. **27/27 local AEGIS tests passed** on exact source code matching the Git blob checksums. No orders, withdrawals, or profits occurred. GitHub Actions CI remains failed/unverified; do not describe this branch as production-ready. Read-only live API calls have not been confirmed from this environment.
