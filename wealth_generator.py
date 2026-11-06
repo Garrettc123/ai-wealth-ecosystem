@@ -86,7 +86,7 @@ class WealthGenerator:
                 stream = IncomeStream(
                     name=stream_config["name"],
                     type=stream_config["type"],
-                    status="active",
+                    status="unverified",
                     monthly_target=stream_config["target"],
                     current_earnings=0.0,
                     last_updated=datetime.now().isoformat()
@@ -119,10 +119,7 @@ class WealthGenerator:
         """Process a single income stream"""
         logger.info(f"Processing {stream.name}...")
         
-        # Simulate income generation (replace with actual logic)
-        await asyncio.sleep(0.5)  # Simulate async work
-        
-        # Generate income based on stream type
+        # No synthesized earnings: only verified receipts can establish revenue.
         if stream.type == "passive":
             earnings = self._passive_income_strategy(stream)
         else:
@@ -135,17 +132,15 @@ class WealthGenerator:
         return earnings
     
     def _passive_income_strategy(self, stream: IncomeStream) -> float:
-        """Execute passive income strategy"""
-        # Simulated passive earnings (replace with real implementation)
-        base_rate = stream.monthly_target / 30 / 24  # Hourly rate
-        return base_rate
-    
+        """Never synthesize real revenue from a target value."""
+        logger.warning("No verified payment source for %s; recorded earnings remain $0", stream.name)
+        return 0.0
+
     def _active_income_strategy(self, stream: IncomeStream) -> float:
-        """Execute active income strategy"""
-        # Simulated active earnings (replace with real implementation)
-        base_rate = stream.monthly_target / 30 / 24  # Hourly rate
-        return base_rate * 1.5  # Active strategies earn 50% more
-    
+        """Never synthesize real revenue from a target value."""
+        logger.warning("No verified trade or payment receipts for %s; earnings remain $0", stream.name)
+        return 0.0
+
     def get_status(self) -> Dict:
         """Get current system status"""
         runtime = datetime.now() - self.start_time

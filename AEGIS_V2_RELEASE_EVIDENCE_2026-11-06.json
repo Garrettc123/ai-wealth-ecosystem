@@ -1,0 +1,36 @@
+{
+  "schema": "garcar.aegis.v2.github_source_sync.v1",
+  "checked_on": "2026-11-06",
+  "repository": "Garrettc123/ai-wealth-ecosystem",
+  "branch": "fix/crypto-trading-fail-closed-20261105",
+  "verification": {
+    "method": "Extracted local release zip; ran `python -m unittest discover -s tests -v` and `python -m compileall -q strategies tests`",
+    "python": "3.13.5",
+    "unit_tests_passed": 67,
+    "unit_tests_failed": 0,
+    "compilation_passed": true,
+    "scope": "local packaged AEGIS V2 suite only; uses synthetic order books and does not test funded exchange connections or trading",
+    "github_ci_passed": false,
+    "real_exchange_order_executed": false,
+    "live_profit_verified": false
+  },
+  "github_source_blobs": {
+    "AEGIS_V2_README.md": "40903150c03bf15f3d17e2b168bc9e39499d0987",
+    ".github/workflows/aegis-v2-offline.yml": "d6355366587e6eeaeb37f614b01538dc3d0c3717",
+    "strategies/__init__.py": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+    "strategies/aegis_scanner.py": "6f38def5f5d07cc6b7c6fab193f68b8ba7f115db",
+    "strategies/aegis_verify.py": "53d61b20302446e3aabf80d9f05749ccd31f97bb",
+    "strategies/aegis_v2.py": "25fa4dfd56683b76680d173fab558940152e436b",
+    "tests/test_aegis_scanner.py": "d370aaf96b7776ed0102ede02ec4a2456227c989",
+    "tests/test_aegis_verify.py": "994848b3fb865178c493de0efed3de85d39f6cc4",
+    "tests/test_aegis_v2.py": "a39b9a93105bc4f1398673af9a27103a203a8578"
+  },
+  "drift": {
+    "AEGIS_README.md": {
+      "current_github_blob": "2f78dc1ccbbd1c13a907ae50b600c4bb0807e604",
+      "packaged_blob": "6b53ab19c81ff5637952ef9c32bda09e943861e7",
+      "action": "preserved current GitHub doc; only V2 source and test files are asserted byte-identical"
+    }
+  },
+  "confidentiality": "No private financial account data, credentials, balances, transaction history, secret keys or banking identifiers are included."
+}

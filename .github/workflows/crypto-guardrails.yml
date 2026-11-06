@@ -1,0 +1,50 @@
+name: Crypto guardrails (no trading)
+
+on:
+  push:
+    paths:
+      - 'strategies/crypto_arbitrage.py'
+      - 'strategies/public_market_scan.py'
+      - 'strategies/aegis_scanner.py'
+      - 'strategies/aegis_verify.py'
+      - 'wealth_generator.py'
+      - 'tests/test_crypto_arbitrage.py'
+      - 'tests/test_public_market_scan.py'
+      - 'tests/test_aegis_scanner.py'
+      - 'tests/test_aegis_verify.py'
+      - 'tests/test_revenue_integrity.py'
+      - '.github/workflows/crypto-guardrails.yml'
+  pull_request:
+    paths:
+      - 'strategies/crypto_arbitrage.py'
+      - 'strategies/public_market_scan.py'
+      - 'strategies/aegis_scanner.py'
+      - 'strategies/aegis_verify.py'
+      - 'wealth_generator.py'
+      - 'tests/test_crypto_arbitrage.py'
+      - 'tests/test_public_market_scan.py'
+      - 'tests/test_aegis_scanner.py'
+      - 'tests/test_aegis_verify.py'
+      - 'tests/test_revenue_integrity.py'
+      - '.github/workflows/crypto-guardrails.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-read-only-market-scanner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile strict crypto modules
+        run: python -m compileall -q strategies/crypto_arbitrage.py strategies/public_market_scan.py strategies/aegis_scanner.py strategies/aegis_verify.py wealth_generator.py tests/test_revenue_integrity.py tests/test_aegis_scanner.py tests/test_aegis_verify.py tests/test_crypto_arbitrage.py tests/test_public_market_scan.py
+      - name: Test strict crypto modules without network or secrets
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+# Deliberately does not install trading dependencies, load keys,
+# write to a database, call a private exchange API, or deploy to hosting.
